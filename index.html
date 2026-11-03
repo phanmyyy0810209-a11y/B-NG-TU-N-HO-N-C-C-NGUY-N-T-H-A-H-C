@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phiếu Học Tập: Bảng Tuần Hoàn Các Nguyên Tố Hóa Học</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        .section-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+        .section-header {
+            padding: 16px 24px;
+            font-weight: 700;
+            font-size: 1.125rem;
+            color: white;
+        }
+        .section-body {
+            padding: 24px;
+        }
+        
+        /* Drag and Drop Styles */
+        .draggable-item {
+            cursor: grab;
+            user-select: none;
+            transition: all 0.2s;
+        }
+        .draggable-item:active {
+            cursor: grabbing;
+        }
+        .draggable-item.selected {
+            border: 2px solid #3b82f6;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+            transform: scale(1.05);
+        }
+        .drop-zone {
+            min-height: 80px;
+            border: 2px dashed #cbd5e1;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .drop-zone.drag-over {
+            background-color: #e0f2fe;
+            border-color: #3b82f6;
+        }
+        .drop-zone.has-item {
+            border-style: solid;
+        }
+        
+        /* Matching Styles */
+        .match-col-item {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .match-col-item.selected {
+            background-color: #dbeafe;
+            border-color: #3b82f6;
+        }
+        .match-col-item.matched {
+            background-color: #f3f4f6;
+            border-color: #d1d5db;
+            color: #6b7280;
+            cursor: not-allowed;
+        }
+        svg.match-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Result Styles */
+        .correct-answer {
+            color: #16a34a;
+            font-weight: bold;
+        }
+        .incorrect-answer {
+            color: #dc2626;
+            text-decoration: line-through;
+        }
+        .status-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            margin-left: 8px;
+        }
+        .status-icon.correct { background-color: #dcfce7; color: #16a34a; }
+        .status-icon.incorrect { background-color: #fee2e2; color: #dc2626; }
+
+        #admin-panel {
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body class="pb-20">
+
+    <!-- Admin Button -->
+    <button onclick="openAdminAuth()" class="fixed top-4 right-4 z-50 bg-gray-800 text-white p-2 rounded-full shadow-lg hover:bg-gray-700 transition">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+    </button>
+
+    <!-- Admin Auth Modal -->
+    <div id="admin-auth-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex justify-center items-center">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-96">
+            <h3 class="text-xl font-bold mb-4">Xác thực Quản trị</h3>
+            <p class="mb-4 text-gray-600">Vui lòng nhập mật khẩu để tiếp tục.</p>
+            <input type="password" id="admin-pwd" class="w-full border rounded p-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Mật khẩu...">
+            <div class="flex justify-end gap-2">
+                <button onclick="closeAdminAuth()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Hủy</button>
+                <button onclick="verifyAdmin()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Xác nhận</button>
+            </div>
+            <p id="auth-error" class="text-red-500 text-sm mt-2 hidden">Mật khẩu không đúng!</p>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="admin-panel" class="fixed inset-0 bg-gray-900 bg-opacity-95 hidden z-50 overflow-y-auto">
+        <div class="max-w-4xl mx-auto my-8 bg-white rounded-xl shadow-2xl overflow-hidden">
+            <div class="bg-gray-800 text-white px-6 py-4 flex justify-between items-center sticky top-0 z-10">
+                <h2 class="text-2xl font-bold flex items-center gap-2">
+                    <span>⚙️</span> Bảng Điều Khiển Giáo Viên
+                </h2>
+                <button onclick="closeAdmin()" class="text-gray-300 hover:text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-8">
+                <!-- General Settings -->
+                <section>
+                    <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Cài đặt chung</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tên bài học</label>
+                            <input type="text" id="cfg-title" class="w-full border rounded p-2">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Môn học</label>
+                            <input type="text" id="cfg-subject" class="w-full border rounded p-2">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tổng điểm toàn phiếu</label>
+                            <input type="number" id="cfg-total-score" class="w-full border rounded p-2" min="1" step="0.5">
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Sections Config -->
+                <section>
+                    <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Cấu hình các phần thi</h3>
+                    <div id="sections-config" class="space-y-4">
+                        <!-- Rendered via JS -->
+                    </div>
+                    <div class="mt-4 p-4 bg-blue-50 rounded-lg flex justify-between items-center">
+                        <span class="font-medium text-blue-900">Tổng điểm đang phân bổ: <span id="current-alloc-score" class="font-bold text-xl">0</span> / <span id="target-alloc-score">10</span></span>
+                        <span id="score-warning" class="text-red-600 font-medium hidden">⚠️ Điểm phân bổ chưa khớp với tổng điểm!</span>
+                    </div>
+                </section>
+
+                <!-- Actions -->
+                <div class="flex justify-end gap-4 border-t pt-6">
+                    <button onclick="resetToDefault()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">Khôi phục mặc định</button>
+                    <button onclick="saveAdminConfig()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium">Lưu Cấu Hình</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Worksheet Content -->
+    <div class="max-w-4xl mx-auto mt-8 px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-2xl shadow-xl overflow-hidden mb-8 text-white">
+            <div class="p-8 text-center relative">
+                <div class="absolute top-0 left-0 w-full h-full opacity-10" style="background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0); background-size: 20px 20px;"></div>
+                <p class="uppercase tracking-widest text-sm font-semibold text-blue-200 mb-2">PHIẾU HỌC TẬP TƯƠNG TÁC</p>
+                <h1 id="ui-title" class="text-3xl md:text-4xl font-bold mb-4 drop-shadow-md">BẢNG TUẦN HOÀN CÁC NGUYÊN TỐ HÓA HỌC</h1>
+                <p class="text-indigo-100" id="ui-subject">Môn học: Hóa Học - Lớp 12</p>
+            </div>
+            <div class="bg-white/10 backdrop-blur-sm p-4 flex flex-col sm:flex-row justify-center gap-4">
+                <input type="text" id="student-name" placeholder="Họ và tên học sinh" class="bg-white/20 border border-white/30 text-white placeholder-white/70 rounded-lg px-4 py-2 focus:outline-none focus:bg-white/30 w-full sm:w-64">
+                <input type="text" id="student-class" placeholder="Lớp" class="bg-white/20 border border-white/30 text-white placeholder-white/70 rounded-lg px-4 py-2 focus:outline-none focus:bg-white/30 w-full sm:w-32">
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg shadow-sm mb-8">
+            <h3 class="font-bold text-yellow-800 flex items-center gap-2 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
+                Mục tiêu & Hướng dẫn
+            </h3>
+            <ul class="list-disc list-inside text-yellow-700 space-y-1 text-sm">
+                <li>Nắm vững nguyên tắc sắp xếp và cấu tạo của bảng tuần hoàn.</li>
+                <li>Phân loại được các nguyên tố s, p, d, f và tính chất kim loại, phi kim.</li>
+                <li>Thao tác trực tiếp trên thiết bị (chọn, điền, kéo thả hoặc chạm để di chuyển).</li>
+                <li>Hoàn thành tất cả các phần trước khi nhấn "Nộp Bài".</li>
+            </ul>
+        </div>
+
+        <form id="worksheet-form" onsubmit="event.preventDefault(); gradeWorksheet();">
+            <div id="sections-container">
+                <!-- Sections will be injected here by JS -->
+            </div>
+
+            <!-- Submit Action -->
+            <div class="text-center mt-12 mb-8">
+                <button type="submit" id="submit-btn" class="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold text-xl px-12 py-4 rounded-full shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all">
+                    NỘP BÀI & CHẤM ĐIỂM
+                </button>
+            </div>
+        </form>
+
+        <!-- Result Display (Hidden initially) -->
+        <div id="result-display" class="hidden bg-white rounded-2xl shadow-2xl p-8 mb-12 text-center border-t-8 border-green-500 transform scale-95 transition-transform duration-500">
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">KẾT QUẢ CỦA EM</h2>
+            <div class="flex justify-center items-baseline gap-2 my-6">
+                <span id="final-score" class="text-6xl font-extrabold text-blue-600">0</span>
+                <span class="text-2xl text-gray-500 font-medium">/ <span id="final-total">10</span></span>
+            </div>
+            <p id="feedback-message" class="text-lg font-medium text-gray-600 mb-6"></p>
+            <button onclick="location.reload()" class="bg-gray-100 text-gray-700 px-6 py-2 rounded-lg font-medium hover:bg-gray-200 transition">Làm lại từ đầu</button>
+        </div>
+
+        <!-- Summary -->
+        <div class="bg-indigo-50 rounded-2xl p-6 shadow-sm border border-indigo-100 mb-12 relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-4 opacity-10">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            </div>
+            <h3 class="text-xl font-bold text-indigo-800 mb-4 flex items-center gap-2">
+                <span>⚡</span> Ghi nhớ siêu nhanh
+            </h3>
+            <ul class="space-y-3 relative z-10 text-indigo-900">
+                <li class="flex items-start gap-2">
+                    <span class="text-indigo-500 mt-1">●</span>
+                    <span><b>Nguyên tắc sắp xếp:</b> Theo chiều tăng dần điện tích hạt nhân.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <span class="text-indigo-500 mt-1">●</span>
+                    <span><b>Chu kì (Hàng):</b> Cùng số lớp electron. Số TT chu kì = số lớp e. Hiện có 7 chu kì.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <span class="text-indigo-500 mt-1">●</span>
+                    <span><b>Nhóm (Cột):</b> Cùng số electron hóa trị (đối với nhóm A). Có 8 nhóm A và 8 nhóm B.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <span class="text-indigo-500 mt-1">●</span>
+                    <span><b>Phân loại:</b> Nguyên tố s, p (nhóm A); d, f (nhóm B, KL chuyển tiếp).</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Match Line Container -->
+    <svg id="match-svg" class="match-line"></svg>
+
+    <script>
+        // --- CONFIGURATION ---
+        // Thay đường dẫn Web App của bạn vào dấu ngoặc kép bên dưới:
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby9mok8RNJKI9Jz7SuwyS4QrdWtYHPG1AByNY5NZV-6W5fODABZWNWAmZ-Mf995ezDx/exec";
+
+        // --- DATA STRUCTURE ---
+        const configKeys = {
+            mcq: { id: 'mcq', name: 'Trắc nghiệm nhanh', color: 'blue' },
+            fill: { id: 'fill', name: 'Điền khuyết', color: 'purple' },
+            tf: { id: 'tf', name: 'Đúng / Sai', color: 'orange' },
+            match: { id: 'match', name: 'Nối cột', color: 'pink' },
+            drag: { id: 'drag', name: 'Kéo thả hình ảnh', color: 'teal' }
+        };
+
+        const defaultData = {
+            title: "BẢNG TUẦN HOÀN CÁC NGUYÊN TỐ HÓA HỌC",
+            subject: "Hóa Học",
+            grade: "12",
+            totalScore: 10,
+            sections: {
+                mcq: { enabled: true, score: 2, data: [
+                    { q: "Trong bảng tuần hoàn, các nguyên tố hoá học được sắp xếp theo nguyên tắc nào sau đây là đúng?", options: ["Nguyên tử khối tăng dần.", "Cùng số lớp electron xếp cùng cột.", "Điện tích hạt nhân tăng dần.", "Cùng số electron hoá trị xếp cùng hàng."], ans: 2 },
+                    { q: "Chu kì là dãy các nguyên tố mà nguyên tử của chúng có đặc điểm gì chung?", options: ["Cùng số electron hóa trị.", "Cùng số điện tích hạt nhân.", "Cùng số lớp electron.", "Cùng nguyên tử khối."], ans: 2 },
+                    { q: "Nguyên tố M có cấu hình electron 1s<sup>2</sup>2s<sup>2</sup>2p<sup>6</sup>3s<sup>1</sup>. M thuộc loại nguyên tố nào?", options: ["Nguyên tố s", "Nguyên tố p", "Nguyên tố d", "Nguyên tố f"], ans: 0 },
+                    { q: "Theo tính chất hóa học, các nguyên tố thuộc nhóm VIIIA hầu hết là:", options: ["Kim loại", "Phi kim", "Khí hiếm", "Kim loại chuyển tiếp"], ans: 2 }
+                ]},
+                fill: { enabled: true, score: 2, data: [
+                    { q: "Mỗi nguyên tố được xếp vào một ô, gọi là ô nguyên tố. Số thứ tự của ô là {số hiệu nguyên tử} của nguyên tố đó.", opts: ["số khối", "số hiệu nguyên tử", "nguyên tử khối"] },
+                    { q: "Bảng tuần hoàn hiện nay có {7} chu kì, trong đó số thứ tự của chu kì bằng số {lớp electron} của nguyên tử.", opts: ["7", "8", "18", "lớp electron", "electron hóa trị"] },
+                    { q: "Các nguyên tố s và p là những nguyên tố mà nguyên tử có electron cuối cùng điền vào phân lớp {s, p tương ứng}.", opts: ["s, p tương ứng", "d, f tương ứng", "p, d tương ứng"] },
+                    { q: "Các nhóm {B} gồm các nguyên tố d và f đều là kim loại chuyển tiếp.", opts: ["A", "B", "IA"] }
+                ]},
+                tf: { enabled: true, score: 2, data: [
+                    { q: "Năm 1869, Mendeleev đã sắp xếp các nguyên tố theo chiều tăng dần của khối lượng nguyên tử.", ans: true },
+                    { q: "Các nguyên tố có cùng số electron hóa trị trong nguyên tử được xếp thành một hàng.", ans: false },
+                    { q: "Nhóm nguyên tố gồm các nguyên tố có tính chất hoá học gần giống nhau.", ans: true },
+                    { q: "Số thứ tự của chu kì luôn bằng tổng số electron của nguyên tử nguyên tố đó.", ans: false }
+                ]},
+                match: { enabled: true, score: 2, data: {
+                    left: ["Ô nguyên tố cho biết", "Chu kì", "Nhóm nguyên tố", "Phân loại theo cấu hình"],
+                    right: ["Dãy nguyên tố có cùng số lớp electron.", "Sắp xếp theo khối s, p, d, f.", "Kí hiệu, tên, số hiệu nguyên tử.", "Cột các nguyên tố có cấu hình electron tương tự."],
+                    pairs: { 0: 2, 1: 0, 2: 3, 3: 1 } // left index -> right index
+                }},
+                drag: { enabled: true, score: 2, data: {
+                    instruction: "Kéo các thông tin vào đúng vị trí của 'Ô nguyên tố' (Ví dụ: Nhôm).<br><small><i>Gợi ý: Chọn mục bên dưới, sau đó bấm vào ô tương ứng trên hình.</i></small>",
+                    bgImage: "", // Can be base64 later
+                    targets: [
+                        { id: 't1', label: 'Số hiệu nguyên tử' },
+                        { id: 't2', label: 'Kí hiệu nguyên tố' },
+                        { id: 't3', label: 'Tên nguyên tố' },
+                        { id: 't4', label: 'Nguyên tử khối TB' }
+                    ],
+                    items: [
+                        { id: 'i1', match: 't1', content: '13' },
+                        { id: 'i2', match: 't2', content: 'Al' },
+                        { id: 'i3', match: 't3', content: 'aluminium' },
+                        { id: 'i4', match: 't4', content: '26,982' }
+                    ]
+                }}
+            }
+        };
+
+        let appData = null;
+        let isSubmitted = false;
+
+        // --- STATE MANAGEMENT ---
+        function initApp() {
+            const saved = localStorage.getItem('pht_bangtuanhoan_v2');
+            if (saved) {
+                try {
+                    appData = JSON.parse(saved);
+                } catch(e) {
+                    appData = JSON.parse(JSON.stringify(defaultData));
+                }
+            } else {
+                appData = JSON.parse(JSON.stringify(defaultData));
+            }
+            updateUIInfo();
+            renderWorksheet();
+            buildAdminPanel();
+        }
+
+        function updateUIInfo() {
+            document.getElementById('ui-title').innerText = appData.title;
+            document.getElementById('ui-subject').innerText = `Môn học: ${appData.subject} - Lớp ${appData.grade}`;
+            document.title = "PHT: " + appData.title;
+        }
+
+        // --- RENDER LOGIC ---
+        function renderWorksheet() {
+            const container = document.getElementById('sections-container');
+            container.innerHTML = '';
+            
+            let sectionIndex = 1;
+            for (const key in configKeys) {
+                const secConfig = appData.sections[key];
+                if (!secConfig.enabled) continue;
+
+                const wrapper = document.createElement('div');
+                wrapper.className = `section-card border-l-4 border-${configKeys[key].color}-500`;
+                
+                let contentHTML = '';
+                switch(key) {
+                    case 'mcq': contentHTML = renderMCQ(secConfig.data); break;
+                    case 'fill': contentHTML = renderFill(secConfig.data); break;
+                    case 'tf': contentHTML = renderTF(secConfig.data); break;
+                    case 'match': contentHTML = renderMatch(secConfig.data); break;
+                    case 'drag': contentHTML = renderDragDrop(secConfig.data); break;
+                }
+
+                wrapper.innerHTML = `
+                    <div class="section-header bg-${configKeys[key].color}-500">
+                        KHU VỰC ${sectionIndex} – ${configKeys[key].name.toUpperCase()} <span class="text-sm font-normal float-right mt-1">(${secConfig.score} điểm)</span>
+                    </div>
+                    <div class="section-body">
+                        ${contentHTML}
+                    </div>
+                `;
+                container.appendChild(wrapper);
+                sectionIndex++;
+            }
+
+            // Post-render setups
+            if(appData.sections.match.enabled) setupMatching();
+            if(appData.sections.drag.enabled) setupDragDropAlternative(); // Use click-to-drop for better mobile support
+        }
+
+        function renderMCQ(data) {
+            let html = '<div class="space-y-6">';
+            data.forEach((item, index) => {
+                let optionsHtml = '';
+                const labels = ['A', 'B', 'C', 'D'];
+                item.options.forEach((opt, optIndex) => {
+                    optionsHtml += `
+                        <label class="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:bg-blue-50 cursor-pointer transition">
+                            <input type="radio" name="mcq_${index}" value="${optIndex}" class="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500">
+                            <span class="text-gray-700"><span class="font-bold mr-1">${labels[optIndex]}.</span> ${opt}</span>
+                        </label>
+                    `;
+                });
+                html += `
+                    <div class="mcq-q-container" data-qidx="${index}">
+                        <p class="font-medium text-gray-800 mb-3"><span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm mr-2">Câu ${index+1}</span> ${item.q.replace(/\$([^\$]+)\$/g, '<i>$1</i>')}</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            ${optionsHtml}
+                        </div>
+                        <div class="feedback-area mt-2 hidden text-sm"></div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            return html;
+        }
+
+        function renderFill(data) {
+            let html = '<div class="space-y-6">';
+            data.forEach((item, index) => {
+                // Parse {answer}
+                let qText = item.q;
+                let match = qText.match(/\{([^}]+)\}/);
+                let correctAns = match ? match[1] : '';
+                
+                let selectHtml = `<select name="fill_${index}" data-correct="${correctAns}" class="border-b-2 border-purple-400 bg-purple-50 text-purple-900 font-medium px-2 py-1 focus:outline-none focus:border-purple-600 mx-1 rounded">
+                    <option value="">-- Chọn --</option>`;
+                
+                // Add correct answer and options
+                let allOpts = [...new Set([correctAns, ...item.opts])];
+                // Shuffle options
+                allOpts.sort(() => Math.random() - 0.5);
+
+                allOpts.forEach(opt => {
+                    if(opt) selectHtml += `<option value="${opt}">${opt}</option>`;
+                });
+                selectHtml += `</select>`;
+                
+                qText = qText.replace(/\{([^}]+)\}/g, selectHtml);
+
+                html += `
+                    <div class="fill-q-container" data-qidx="${index}">
+                        <div class="flex gap-3 items-start">
+                            <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-sm whitespace-nowrap">Câu ${index+1}</span>
+                            <p class="text-gray-800 leading-relaxed text-lg">${qText} <span class="feedback-icon"></span></p>
+                        </div>
+                        <div class="feedback-area mt-1 text-sm ml-14 hidden"></div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            return html;
+        }
+
+        function renderTF(data) {
+            let html = '<div class="overflow-x-auto"><table class="w-full text-left border-collapse">';
+            html += `<thead><tr class="border-b-2 border-gray-200"><th class="py-3 px-4">Phát biểu</th><th class="py-3 px-4 text-center w-24">Đúng</th><th class="py-3 px-4 text-center w-24">Sai</th></tr></thead><tbody>`;
+            data.forEach((item, index) => {
+                html += `
+                    <tr class="border-b border-gray-100 hover:bg-orange-50 tf-q-container" data-qidx="${index}">
+                        <td class="py-4 px-4 text-gray-800">
+                            <div class="flex gap-2 items-start">
+                                <span class="text-orange-500 font-bold mt-1">${index+1}.</span>
+                                <span>${item.q}</span>
+                            </div>
+                            <div class="feedback-area mt-1 text-sm ml-6 hidden"></div>
+                        </td>
+                        <td class="py-4 px-4 text-center">
+                            <input type="radio" name="tf_${index}" value="true" class="w-5 h-5 text-orange-500 focus:ring-orange-500 cursor-pointer">
+                        </td>
+                        <td class="py-4 px-4 text-center relative">
+                            <input type="radio" name="tf_${index}" value="false" class="w-5 h-5 text-orange-500 focus:ring-orange-500 cursor-pointer">
+                            <span class="feedback-icon absolute right-0 top-1/2 transform -translate-y-1/2"></span>
+                        </td>
+                    </tr>
+                `;
+            });
+            html += '</tbody></table></div>';
+            return html;
+        }
+
+        function renderMatch(data) {
+            let html = '<div class="flex flex-col md:flex-row justify-between relative gap-8 md:gap-20 match-container" id="match-area">';
+            
+            // Left Column
+            let leftHtml = '<div class="flex-1 space-y-4 z-10" id="match-left">';
+            data.left.forEach((text, i) => {
+                leftHtml += `<div class="match-col-item bg-white border-2 border-gray-200 p-4 rounded-lg shadow-sm text-center font-medium" data-side="left" data-idx="${i}" id="l_${i}">${text}</div>`;
+            });
+            leftHtml += '</div>';
+
+            // Right Column
+            let rightHtml = '<div class="flex-1 space-y-4 z-10" id="match-right">';
+            // Shuffle right for display
+            let rIndices = data.right.map((_, i) => i).sort(() => Math.random() - 0.5);
+            rIndices.forEach(i => {
+                rightHtml += `<div class="match-col-item bg-white border-2 border-gray-200 p-4 rounded-lg shadow-sm text-center" data-side="right" data-idx="${i}" id="r_${i}">${data.right[i]}</div>`;
+            });
+            rightHtml += '</div>';
+
+            html += leftHtml + rightHtml + '</div>';
+            html += '<div id="match-feedback" class="mt-4 text-center font-bold"></div>';
+            return html;
+        }
+
+        function renderDragDrop(data) {
+            let html = `<p class="mb-6 text-gray-700 bg-teal-50 p-3 rounded border border-teal-200">${data.instruction}</p>`;
+            
+            html += '<div class="flex flex-col items-center gap-8">';
+            
+            // Interaction Area: Image/Grid + Dropzones
+            html += `<div class="relative bg-gray-100 p-8 rounded-xl w-full max-w-md border-2 border-teal-100 drag-area">`;
+            
+            if(data.bgImage) {
+                // If teacher uploaded image
+                html += `<img src="${data.bgImage}" class="w-full h-auto opacity-50 absolute inset-0 object-cover rounded-xl" style="z-index:0">`;
+            }
+
+            // Grid for structural atom cell (specific to this lesson)
+            html += `<div class="relative z-10 grid grid-cols-2 gap-4">`;
+            data.targets.forEach(t => {
+                html += `
+                    <div class="flex flex-col items-center">
+                        <span class="text-xs text-gray-500 mb-1 font-medium">${t.label}</span>
+                        <div class="drop-zone w-24 h-24 bg-white shadow-sm rounded-lg relative" data-target-id="${t.id}"></div>
+                    </div>
+                `;
+            });
+            html += `</div></div>`;
+
+            // Draggable Items Area
+            html += `<div class="flex flex-wrap justify-center gap-4 bg-gray-50 p-6 rounded-xl w-full border border-gray-200 items-container">`;
+            // Shuffle items
+            let shuffledItems = [...data.items].sort(() => Math.random() - 0.5);
+            shuffledItems.forEach(item => {
+                let isImg = item.content.startsWith('data:image');
+                let contentHTML = isImg ? `<img src="${item.content}" class="max-h-full max-w-full object-contain pointer-events-none">` 
+                                        : `<span class="text-xl font-bold text-gray-800 pointer-events-none">${item.content}</span>`;
+                
+                html += `
+                    <div class="draggable-item bg-white border-2 border-teal-500 p-3 rounded-lg shadow-md w-24 h-24 flex items-center justify-center text-center" 
+                         data-item-id="${item.id}" data-match="${item.match}">
+                        ${contentHTML}
+                    </div>
+                `;
+            });
+            html += `</div></div>`;
+            return html;
+        }
+
+        // --- INTERACTION LOGIC ---
+
+        // Matching Logic
+        let matchSelections = { left: null, right: null };
+        let userMatches = {}; // leftIndex -> rightIndex
+        let matchLines = [];
+
+        function setupMatching() {
+            const items = document.querySelectorAll('.match-col-item');
+            items.forEach(item => {
+                item.addEventListener('click', handleMatchClick);
+            });
+            window.addEventListener('resize', drawMatchLines);
+        }
+
+        function handleMatchClick(e) {
+            if (isSubmitted) return;
+            const el = e.currentTarget;
+            if (el.classList.contains('matched')) {
+                // Allow unmatching? Let's keep it simple: no unmatching for now, or reset all.
+                // Better UX: clicking a matched item removes the match.
+                removeMatch(el);
+                return;
+            }
+
+            const side = el.dataset.side;
+            const idx = el.dataset.idx;
+
+            // Deselect previous on same side
+            document.querySelectorAll(`.match-col-item[data-side="${side}"]`).forEach(i => i.classList.remove('selected'));
+            
+            el.classList.add('selected');
+            matchSelections[side] = { el, idx };
+
+            if (matchSelections.left && matchSelections.right) {
+                // Create match
+                const lIdx = matchSelections.left.idx;
+                const rIdx = matchSelections.right.idx;
+                userMatches[lIdx] = rIdx;
+                
+                matchSelections.left.el.classList.remove('selected');
+                matchSelections.right.el.classList.remove('selected');
+                matchSelections.left.el.classList.add('matched');
+                matchSelections.right.el.classList.add('matched');
+                
+                matchSelections = { left: null, right: null };
+                drawMatchLines();
+            }
+        }
+
+        function removeMatch(el) {
+            const side = el.dataset.side;
+            const idx = el.dataset.idx;
+            
+            if (side === 'left') {
+                const rIdx = userMatches[idx];
+                delete userMatches[idx];
+                el.classList.remove('matched');
+                if(rIdx !== undefined) document.getElementById(`r_${rIdx}`).classList.remove('matched');
+            } else {
+                // Find left that matches this right
+                for (let l in userMatches) {
+                    if (userMatches[l] == idx) {
+                        delete userMatches[l];
+                        el.classList.remove('matched');
+                        document.getElementById(`l_${l}`).classList.remove('matched');
+                        break;
+                    }
+                }
+            }
+            drawMatchLines();
+        }
+
+        function drawMatchLines() {
+            const svg = document.getElementById('match-svg');
+            // Check if SVG exists, if not, create it relative to body
+            if(!document.body.contains(svg)) return;
+            
+            svg.innerHTML = '';
+            
+            // Need to make SVG overlay entire page to draw freely, but pointer-events: none is set
+            
+            for (let lIdx in userMatches) {
+                const rIdx = userMatches[lIdx];
+                const lEl = document.getElementById(`l_${lIdx}`);
+                const rEl = document.getElementById(`r_${rIdx}`);
+                
+                if(lEl && rEl) {
+                    const lRect = lEl.getBoundingClientRect();
+                    const rRect = rEl.getBoundingClientRect();
+                    
+                    const x1 = lRect.right + window.scrollX;
+                    const y1 = lRect.top + lRect.height / 2 + window.scrollY;
+                    const x2 = rRect.left + window.scrollX;
+                    const y2 = rRect.top + rRect.height / 2 + window.scrollY;
+
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', x1);
+                    line.setAttribute('y1', y1);
+                    line.setAttribute('x2', x2);
+                    line.setAttribute('y2', y2);
+                    line.setAttribute('stroke', '#94a3b8');
+                    line.setAttribute('stroke-width', '2');
+                    
+                    // Status coloring if submitted
+                    if(isSubmitted) {
+                        const correctRIdx = appData.sections.match.data.pairs[lIdx];
+                        if(correctRIdx == rIdx) {
+                            line.setAttribute('stroke', '#16a34a'); // Green
+                            line.setAttribute('stroke-width', '3');
+                        } else {
+                            line.setAttribute('stroke', '#dc2626'); // Red
+                        }
+                    }
+
+                    svg.appendChild(line);
+                }
+            }
+        }
+
+        // Drag Drop (Click to Select, Click to Drop) Logic
+        let selectedDragItem = null;
+
+        function setupDragDropAlternative() {
+            const items = document.querySelectorAll('.draggable-item');
+            const zones = document.querySelectorAll('.drop-zone');
+
+            items.forEach(item => {
+                item.addEventListener('click', () => {
+                    if (isSubmitted) return;
+                    // If clicking an item already in a drop zone, move it back
+                    if (item.parentElement.classList.contains('drop-zone')) {
+                        document.querySelector('.items-container').appendChild(item);
+                        item.classList.remove('w-full', 'h-full', 'border-0');
+                        item.classList.add('w-24', 'h-24', 'border-2');
+                        return;
+                    }
+
+                    items.forEach(i => i.classList.remove('selected'));
+                    item.classList.add('selected');
+                    selectedDragItem = item;
+                });
+            });
+
+            zones.forEach(zone => {
+                zone.addEventListener('click', () => {
+                    if (isSubmitted) return;
+                    if (selectedDragItem) {
+                        // If zone has an item, move it back to container
+                        if (zone.children.length > 0) {
+                            const oldItem = zone.children[0];
+                            document.querySelector('.items-container').appendChild(oldItem);
+                            oldItem.classList.remove('w-full', 'h-full', 'border-0');
+                            oldItem.classList.add('w-24', 'h-24', 'border-2');
+                        }
+                        
+                        // Append new item
+                        zone.appendChild(selectedDragItem);
+                        selectedDragItem.classList.remove('selected', 'w-24', 'h-24', 'border-2');
+                        selectedDragItem.classList.add('w-full', 'h-full', 'border-0'); // Fit drop zone
+                        selectedDragItem = null;
+                    }
+                });
+            });
+        }
+
+
+        // --- SCORING LOGIC ---
+        async function gradeWorksheet() {
+            if (isSubmitted) return;
+            isSubmitted = true;
+            
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> ĐANG CHẤM & GỬI...';
+            submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+            
+            let totalScore = 0;
+            let totalMaxScore = 0;
+
+            // Variables for Google Sheets data
+            let qTotal = 0;
+            let qCorrect = 0;
+            let qUnanswered = 0;
+
+            // 1. MCQ
+            if(appData.sections.mcq.enabled) {
+                const max = appData.sections.mcq.score;
+                totalMaxScore += max;
+                const data = appData.sections.mcq.data;
+                let correctCount = 0;
+                
+                qTotal += data.length;
+                
+                data.forEach((item, index) => {
+                    const selected = document.querySelector(`input[name="mcq_${index}"]:checked`);
+                    const container = document.querySelector(`.mcq-q-container[data-qidx="${index}"]`);
+                    const feedback = container.querySelector('.feedback-area');
+                    feedback.classList.remove('hidden');
+
+                    if(selected) {
+                        if(parseInt(selected.value) === item.ans) {
+                            correctCount++;
+                            qCorrect++;
+                            feedback.innerHTML = `<span class="text-green-600 font-bold flex items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Đúng</span>`;
+                        } else {
+                            feedback.innerHTML = `<span class="text-red-600 font-bold flex items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg> Sai.</span> Đáp án đúng là: ${['A','B','C','D'][item.ans]}`;
+                        }
+                    } else {
+                        qUnanswered++;
+                        feedback.innerHTML = `<span class="text-gray-500 font-bold">Chưa làm</span>`;
+                    }
+                    // Disable inputs
+                    container.querySelectorAll('input').forEach(i => i.disabled = true);
+                });
+                
+                totalScore += (correctCount / data.length) * max;
+            }
+
+            // 2. Fill Blank
+            if(appData.sections.fill.enabled) {
+                const max = appData.sections.fill.score;
+                totalMaxScore += max;
+                const data = appData.sections.fill.data;
+                let correctCount = 0;
+
+                qTotal += data.length;
+
+                data.forEach((item, index) => {
+                    const selects = document.querySelectorAll(`select[name="fill_${index}"]`);
+                    const container = document.querySelector(`.fill-q-container[data-qidx="${index}"]`);
+                    const feedback = container.querySelector('.feedback-area');
+                    const icon = container.querySelector('.feedback-icon');
+                    
+                    let allCorrect = true;
+                    let hasAnswer = false;
+
+                    selects.forEach(select => {
+                        select.disabled = true;
+                        if(select.value !== "") hasAnswer = true;
+                        
+                        if(select.value === select.dataset.correct) {
+                            select.classList.replace('text-purple-900', 'text-green-700');
+                            select.classList.add('bg-green-50');
+                        } else {
+                            allCorrect = false;
+                            select.classList.replace('text-purple-900', 'text-red-700');
+                            select.classList.add('bg-red-50');
+                        }
+                    });
+
+                    if(!hasAnswer) allCorrect = false;
+
+                    if(allCorrect) {
+                        correctCount++;
+                        qCorrect++;
+                        icon.innerHTML = '✓';
+                        icon.className = 'status-icon correct';
+                    } else if(hasAnswer) {
+                        icon.innerHTML = '✗';
+                        icon.className = 'status-icon incorrect';
+                        // Show correct answers
+                        feedback.classList.remove('hidden');
+                        let corrTxt = Array.from(selects).map(s => s.dataset.correct).join(', ');
+                        feedback.innerHTML = `<span class="text-green-600">Đúng: ${corrTxt}</span>`;
+                    } else {
+                        qUnanswered++;
+                        icon.innerHTML = '-';
+                        icon.className = 'status-icon bg-gray-200 text-gray-500';
+                    }
+                });
+                totalScore += (correctCount / data.length) * max;
+            }
+
+            // 3. True/False
+            if(appData.sections.tf.enabled) {
+                const max = appData.sections.tf.score;
+                totalMaxScore += max;
+                const data = appData.sections.tf.data;
+                let correctCount = 0;
+
+                qTotal += data.length;
+
+                data.forEach((item, index) => {
+                    const selected = document.querySelector(`input[name="tf_${index}"]:checked`);
+                    const container = document.querySelector(`.tf-q-container[data-qidx="${index}"]`);
+                    const feedback = container.querySelector('.feedback-area');
+                    const icon = container.querySelector('.feedback-icon');
+
+                    if(selected) {
+                        let isTrue = selected.value === 'true';
+                        if(isTrue === item.ans) {
+                            correctCount++;
+                            qCorrect++;
+                            icon.innerHTML = '✓';
+                            icon.className = 'status-icon correct absolute right-4 top-1/2 transform -translate-y-1/2';
+                            container.classList.add('bg-green-50');
+                        } else {
+                            icon.innerHTML = '✗';
+                            icon.className = 'status-icon incorrect absolute right-4 top-1/2 transform -translate-y-1/2';
+                            container.classList.add('bg-red-50');
+                            feedback.classList.remove('hidden');
+                            feedback.innerHTML = `<span class="text-green-600">Đáp án: ${item.ans ? 'Đúng' : 'Sai'}</span>`;
+                        }
+                    } else {
+                        qUnanswered++;
+                        container.classList.add('opacity-50');
+                    }
+                    container.querySelectorAll('input').forEach(i => i.disabled = true);
+                });
+                totalScore += (correctCount / data.length) * max;
+            }
+
+            // 4. Matching
+            if(appData.sections.match.enabled) {
+                const max = appData.sections.match.score;
+                totalMaxScore += max;
+                const pairsCount = Object.keys(appData.sections.match.data.pairs).length;
+                let correctCount = 0;
+
+                qTotal += pairsCount;
+
+                for (let lIdx in appData.sections.match.data.pairs) {
+                    const correctRIdx = appData.sections.match.data.pairs[lIdx];
+                    const userRIdx = userMatches[lIdx];
+                    
+                    const lEl = document.getElementById(`l_${lIdx}`);
+                    
+                    if (userRIdx == correctRIdx) {
+                        correctCount++;
+                        qCorrect++;
+                        lEl.classList.add('bg-green-100', 'border-green-400');
+                    } else if (userRIdx !== undefined) {
+                        lEl.classList.add('bg-red-100', 'border-red-400');
+                    } else {
+                        qUnanswered++;
+                    }
+                }
+                
+                document.querySelectorAll('.match-col-item').forEach(el => {
+                    el.style.pointerEvents = 'none'; // Disable click
+                });
+                drawMatchLines(); // Redraw with colors
+
+                let fb = document.getElementById('match-feedback');
+                fb.innerHTML = `Đúng ${correctCount}/${pairsCount} cặp`;
+                if(correctCount === pairsCount) fb.className = "mt-4 text-center font-bold text-green-600";
+                else fb.className = "mt-4 text-center font-bold text-red-600";
+
+                totalScore += (correctCount / pairsCount) * max;
+            }
+
+            // 5. Drag & Drop
+            if(appData.sections.drag.enabled) {
+                const max = appData.sections.drag.score;
+                totalMaxScore += max;
+                const itemsCount = appData.sections.drag.data.items.length;
+                let correctCount = 0;
+
+                qTotal += itemsCount;
+
+                const zones = document.querySelectorAll('.drop-zone');
+                zones.forEach(zone => {
+                    const targetId = zone.dataset.targetId;
+                    if(zone.children.length > 0) {
+                        const item = zone.children[0];
+                        if(item.dataset.match === targetId) {
+                            correctCount++;
+                            qCorrect++;
+                            zone.classList.add('bg-green-100', 'border-green-500');
+                            item.classList.replace('border-teal-500', 'border-green-600');
+                        } else {
+                            zone.classList.add('bg-red-100', 'border-red-500');
+                            item.classList.replace('border-teal-500', 'border-red-600');
+                        }
+                    } else {
+                        qUnanswered++;
+                    }
+                });
+
+                document.querySelectorAll('.draggable-item, .drop-zone').forEach(el => {
+                    el.style.pointerEvents = 'none';
+                });
+
+                totalScore += (correctCount / itemsCount) * max;
+            }
+
+            // Final Calculation
+            totalScore = Math.round(totalScore * 100) / 100; // max 2 decimals
+            let qIncorrect = qTotal - qCorrect - qUnanswered;
+
+            const studentName = document.getElementById('student-name').value.trim() || 'Ẩn danh';
+            const studentClass = document.getElementById('student-class').value.trim() || 'Không rõ';
+            
+            const payload = {
+                name: studentName,
+                className: studentClass,
+                score: totalScore,
+                correct: qCorrect,
+                incorrect: qIncorrect,
+                unanswered: qUnanswered,
+                total: qTotal,
+                timestamp: new Date().toLocaleString('vi-VN')
+            };
+
+            // Send to Google Sheets
+            if (GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== "YOUR_WEB_APP_URL_HERE") {
+                try {
+                    await fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify(payload)
+                    });
+                } catch (error) {
+                    console.error("Lỗi gửi dữ liệu về Sheets:", error);
+                }
+            }
+
+            submitBtn.classList.add('hidden');
+            
+            const resultBox = document.getElementById('result-display');
+            resultBox.classList.remove('hidden');
+            
+            // Animation
+            setTimeout(() => {
+                resultBox.classList.remove('scale-95');
+                resultBox.classList.add('scale-100');
+            }, 50);
+
+            document.getElementById('final-score').innerText = totalScore;
+            document.getElementById('final-total').innerText = appData.totalScore; // Show configured total, logic ensures totalMaxScore = totalScore config
+
+            const msgEl = document.getElementById('feedback-message');
+            const percent = totalScore / appData.totalScore;
+            if(percent >= 0.8) msgEl.innerHTML = "🎉 Tuyệt vời! Em nắm bài rất vững.";
+            else if(percent >= 0.5) msgEl.innerHTML = "👍 Khá tốt! Cố gắng ôn lại một chút nhé.";
+            else msgEl.innerHTML = "💪 Đừng nản chí! Hãy xem lại phần 'Ghi nhớ siêu nhanh'.";
+            
+            // Scroll to result
+            resultBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+
+        // --- ADMIN LOGIC ---
+        function openAdminAuth() {
+            document.getElementById('admin-auth-modal').classList.remove('hidden');
+            document.getElementById('admin-pwd').value = '';
+            document.getElementById('auth-error').classList.add('hidden');
+            document.getElementById('admin-pwd').focus();
+        }
+
+        function closeAdminAuth() {
+            document.getElementById('admin-auth-modal').classList.add('hidden');
+        }
+
+        function verifyAdmin() {
+            const pwd = document.getElementById('admin-pwd').value;
+            if (pwd === '1230') {
+                closeAdminAuth();
+                openAdminPanel();
+            } else {
+                document.getElementById('auth-error').classList.remove('hidden');
+            }
+        }
+
+        function openAdminPanel() {
+            document.getElementById('admin-panel').classList.remove('hidden');
+            populateAdminData();
+        }
+
+        function closeAdmin() {
+            document.getElementById('admin-panel').classList.add('hidden');
+        }
+
+        function buildAdminPanel() {
+            // General
+            document.getElementById('cfg-title').value = appData.title;
+            document.getElementById('cfg-subject').value = appData.subject;
+            document.getElementById('cfg-total-score').value = appData.totalScore;
+            
+            document.getElementById('cfg-total-score').addEventListener('input', updateScoreWarning);
+
+            // Sections
+            const container = document.getElementById('sections-config');
+            container.innerHTML = '';
+            
+            for (const key in configKeys) {
+                const sec = appData.sections[key];
+                const info = configKeys[key];
+                
+                let qCount = 0;
+                if(key === 'match') qCount = Object.keys(sec.data.pairs).length;
+                else if(key === 'drag') qCount = sec.data.items.length;
+                else qCount = sec.data.length;
+
+                // For drag drop image upload
+                let uploadHtml = '';
+                if(key === 'drag') {
+                    uploadHtml = `
+                        <div class="mt-2 pt-2 border-t border-gray-200">
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Ảnh nền (Tùy chọn)</label>
+                            <input type="file" accept="image/*" class="text-sm w-full" onchange="handleImageUpload(event, '${key}')">
+                            <img id="preview-${key}" src="${sec.data.bgImage}" class="mt-2 h-16 object-cover rounded ${sec.data.bgImage ? '' : 'hidden'}">
+                        </div>
+                    `;
+                }
+
+                container.innerHTML += `
+                    <div class="border rounded-lg p-4 bg-gray-50 flex flex-col gap-3">
+                        <div class="flex justify-between items-center">
+                            <label class="flex items-center gap-2 font-bold text-gray-700">
+                                <input type="checkbox" id="enable-${key}" ${sec.enabled ? 'checked' : ''} class="w-5 h-5 text-blue-600 rounded" onchange="updateScoreWarning()">
+                                Bật ${info.name}
+                            </label>
+                            <span class="text-sm text-gray-500 bg-white px-2 py-1 rounded border">Số câu/mục: <span class="font-bold text-gray-800">${qCount}</span></span>
+                        </div>
+                        
+                        <div class="pl-7 grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Điểm tối đa phần này</label>
+                                <input type="number" id="score-${key}" value="${sec.score}" min="0" step="0.5" class="w-full border rounded p-1 text-sm score-input" oninput="updateScoreWarning()">
+                            </div>
+                        </div>
+                        ${uploadHtml}
+                    </div>
+                `;
+            }
+            updateScoreWarning();
+        }
+
+        function populateAdminData() {
+            buildAdminPanel();
+        }
+
+        function handleImageUpload(event, sectionKey) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    appData.sections[sectionKey].data.bgImage = e.target.result;
+                    const preview = document.getElementById(`preview-${sectionKey}`);
+                    preview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function updateScoreWarning() {
+            let totalAllocated = 0;
+            const targetTotal = parseFloat(document.getElementById('cfg-total-score').value) || 0;
+            
+            for (const key in configKeys) {
+                const isEnabled = document.getElementById(`enable-${key}`).checked;
+                if(isEnabled) {
+                    totalAllocated += parseFloat(document.getElementById(`score-${key}`).value) || 0;
+                }
+            }
+
+            document.getElementById('current-alloc-score').innerText = totalAllocated;
+            document.getElementById('target-alloc-score').innerText = targetTotal;
+
+            const warning = document.getElementById('score-warning');
+            if(Math.abs(totalAllocated - targetTotal) > 0.01) { // float precision safe
+                warning.classList.remove('hidden');
+            } else {
+                warning.classList.add('hidden');
+            }
+        }
+
+        function saveAdminConfig() {
+            // Validation
+            const targetTotal = parseFloat(document.getElementById('cfg-total-score').value) || 0;
+            let totalAllocated = 0;
+            for (const key in configKeys) {
+                if(document.getElementById(`enable-${key}`).checked) {
+                    totalAllocated += parseFloat(document.getElementById(`score-${key}`).value) || 0;
+                }
+            }
+            if(Math.abs(totalAllocated - targetTotal) > 0.01) {
+                alert("Cảnh báo: Tổng điểm phân bổ không bằng tổng điểm toàn bài. Vui lòng kiểm tra lại trước khi lưu!");
+                return;
+            }
+
+            // Save basic
+            appData.title = document.getElementById('cfg-title').value;
+            appData.subject = document.getElementById('cfg-subject').value;
+            appData.totalScore = targetTotal;
+
+            // Save sections config
+            for (const key in configKeys) {
+                appData.sections[key].enabled = document.getElementById(`enable-${key}`).checked;
+                appData.sections[key].score = parseFloat(document.getElementById(`score-${key}`).value) || 0;
+            }
+
+            // Save to localStorage
+            try {
+                localStorage.setItem('pht_bangtuanhoan_v2', JSON.stringify(appData));
+            } catch(e) {
+                console.warn("Storage quota exceeded or error saving", e);
+            }
+
+            // Reload UI
+            updateUIInfo();
+            renderWorksheet();
+            closeAdmin();
+            alert("Đã lưu cấu hình thành công!");
+            
+            // Reset state
+            isSubmitted = false;
+            document.getElementById('submit-btn').classList.remove('hidden');
+            document.getElementById('result-display').classList.add('hidden');
+        }
+
+        function resetToDefault() {
+            if(confirm("Khôi phục toàn bộ nội dung về mặc định? Mọi thay đổi sẽ bị xóa.")) {
+                localStorage.removeItem('pht_bangtuanhoan_v2');
+                location.reload();
+            }
+        }
+
+        // Init on load
+        window.addEventListener('DOMContentLoaded', () => {
+            initApp();
+            
+            // Handle window resize for SVG lines
+            window.addEventListener('resize', () => {
+                if(appData && appData.sections.match.enabled && !isSubmitted) {
+                    drawMatchLines();
+                }
+            });
+        });
+
+    </script>
+</body>
+</html>
